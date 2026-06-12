@@ -4,6 +4,38 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>紅磚製作｜器材租借</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA6gsIXpATTsO2TTN6BK-hi7vmC-NQV9w4",
+    authDomain: "bricks-equipment.firebaseapp.com",
+    projectId: "bricks-equipment",
+    storageBucket: "bricks-equipment.firebasestorage.app",
+    messagingSenderId: "390283945689",
+    appId: "1:390283945689:web:a244119f0a98188d15c0c8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.fsGet = async function(k) {
+    try {
+      const snap = await getDoc(doc(db, 'bricks_data', k));
+      return snap.exists() ? snap.data().value : null;
+    } catch(e) { console.error('fsGet error', e); return null; }
+  };
+
+  window.fsSet = async function(k, v) {
+    try {
+      await setDoc(doc(db, 'bricks_data', k), { value: v });
+    } catch(e) { console.error('fsSet error', e); }
+  };
+
+  window._firebaseReady = true;
+  window.dispatchEvent(new Event('firebaseReady'));
+</script>
 <style>
 :root {
   --red: #C8432A;
@@ -891,17 +923,13 @@ body {
 // ── STATE ──
 let EQ = [], PACKAGES = [], selQty = {}, selectedPkg = null, rentalDays = 1, catFilter = 'all', cData = {};
 
-// ── STORAGE ──
+// ── STORAGE (Firebase Firestore) ──
 async function sGet(k) {
-  if (typeof window.storage !== 'undefined') {
-    try { const r = await window.storage.get(k); return r ? r.value : null; } catch(e) {}
-  }
+  if (window.fsGet) return await window.fsGet(k);
   return localStorage.getItem(k);
 }
 async function sSet(k, v) {
-  if (typeof window.storage !== 'undefined') {
-    try { const r = await window.storage.set(k, v); if (r) return; } catch(e) {}
-  }
+  if (window.fsSet) await window.fsSet(k, v);
   localStorage.setItem(k, v);
 }
 
