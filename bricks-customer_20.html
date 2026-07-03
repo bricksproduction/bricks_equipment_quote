@@ -7,34 +7,12 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
   import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyA6gsIXpATTsO2TTN6BK-hi7vmC-NQV9w4",
-    authDomain: "bricks-equipment.firebaseapp.com",
-    projectId: "bricks-equipment",
-    storageBucket: "bricks-equipment.firebasestorage.app",
-    messagingSenderId: "390283945689",
-    appId: "1:390283945689:web:a244119f0a98188d15c0c8"
-  };
-
+  const firebaseConfig = { apiKey: "AIzaSyA6gsIXpATTsO2TTN6BK-hi7vmC-NQV9w4", authDomain: "bricks-equipment.firebaseapp.com", projectId: "bricks-equipment", storageBucket: "bricks-equipment.firebasestorage.app", messagingSenderId: "390283945689", appId: "1:390283945689:web:a244119f0a98188d15c0c8" };
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-
-  window.fsGet = async function(k) {
-    try {
-      const snap = await getDoc(doc(db, 'bricks_data', k));
-      return snap.exists() ? snap.data().value : null;
-    } catch(e) { console.error('fsGet error', e); return null; }
-  };
-
-  window.fsSet = async function(k, v) {
-    try {
-      await setDoc(doc(db, 'bricks_data', k), { value: v });
-    } catch(e) { console.error('fsSet error', e); }
-  };
-
-  window._firebaseReady = true;
-  window.dispatchEvent(new Event('firebaseReady'));
+  window.fsGet = async function(k) { try { const snap = await getDoc(doc(db, "bricks_data", k)); return snap.exists() ? snap.data().value : null; } catch(e) { return null; } };
+  window.fsSet = async function(k, v) { try { await setDoc(doc(db, "bricks_data", k), { value: v }); } catch(e) {} };
+  window._firebaseReady = true; window.dispatchEvent(new Event("firebaseReady"));
 </script>
 <style>
 :root {
@@ -429,6 +407,9 @@ body {
   padding: 1px 7px;
   border-radius: 10px;
 }
+
+.pkg-incl-badge{display:inline-block;font-size:10px;font-weight:700;color:#246B3B;background:#EBF4EF;border:1px solid #b3d9c0;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;white-space:nowrap;}
+.eq-row.in-pkg{border-left:3px solid #246B3B;background:linear-gradient(to right,#f4fbf6 0%,transparent 80%);}
 
 /* PACKAGES */
 .pkg-section-title{font-size:13px;font-weight:800;color:var(--gray-3);text-transform:uppercase;letter-spacing:.06em;margin:20px 0 10px;}
@@ -925,11 +906,11 @@ let EQ = [], PACKAGES = [], selQty = {}, selectedPkg = null, rentalDays = 1, cat
 
 // ── STORAGE (Firebase Firestore) ──
 async function sGet(k) {
-  if (window.fsGet) return await window.fsGet(k);
+  if(window.fsGet) return await window.fsGet(k);
   return localStorage.getItem(k);
 }
 async function sSet(k, v) {
-  if (window.fsSet) await window.fsSet(k, v);
+  if(window.fsSet) await window.fsSet(k, v);
   localStorage.setItem(k, v);
 }
 
@@ -1095,22 +1076,15 @@ function selectPkg(id) {
 }
 
 // ── EQ LIST ──
-function getCategories() { return [...new Set(EQ.map(e => e.category))]; }
-
-function renderCatChips() {
-  const cats = getCategories();
-  const el = document.getElementById('cat-chips');
-  if (!el) return;
-  el.innerHTML = `<div class="chip on" onclick="setCat('all')">全部</div>` +
-    cats.map(c => `<div class="chip" onclick="setCat('${c}')">${c}</div>`).join('');
+function getCategories() {
+  // Preserve the order categories first appear in EQ array
+  return [...new Set(EQ.map(e => e.category))];
 }
 
-function setCat(c) {
-  catFilter = c;
-  document.querySelectorAll('.chip').forEach(el => {
-    el.className = 'chip' + ((c === 'all' && el.textContent === '全部') || el.textContent === c ? ' on' : '');
-  });
-  renderEqList();
+function codeNum(code) {
+  if (!code) return 9999;
+  const m = code.match(/(\d+)$/);
+  return m ? parseInt(m[1]) : 9999;
 }
 
 function renderEqList() {
@@ -1118,12 +1092,17 @@ function renderEqList() {
   const cats = getCategories();
   const filtered = EQ.filter(e => {
     const mc = catFilter === 'all' || e.category === catFilter;
-    const ms = !q || e.name.toLowerCase().includes(q);
+    const ms = !q || e.name.toLowerCase().includes(q) || (e.code||'').toLowerCase().includes(q);
     return mc && ms;
   });
   const grouped = {};
   cats.forEach(c => { grouped[c] = []; });
   filtered.forEach(e => { if (grouped[e.category]) grouped[e.category].push(e); });
+  Object.values(grouped).forEach(arr => arr.sort((a, b) => codeNum(a.code) - codeNum(b.code)));
+
+  // Build set of equipment IDs included in selected package
+  const pkgIds = selectedPkg ? new Set((selectedPkg.items||[]).map(i => i.equipmentId)) : new Set();
+
   const el = document.getElementById('eq-list');
   if (!el) return;
   let html = '';
@@ -1135,10 +1114,11 @@ function renderEqList() {
       const qty = selQty[e.id] || 0;
       const sub = e.rate * qty * rentalDays;
       const oos = e.stock <= 0;
-      html += `<div class="eq-row ${qty > 0 ? 'sel' : ''} ${oos ? 'oos' : ''}" onclick="${oos ? '' : `toggleEq('${e.id}')`}">
+      const inPkg = pkgIds.has(e.id);
+      html += `<div class="eq-row ${qty > 0 ? 'sel' : ''} ${oos ? 'oos' : ''} ${inPkg ? 'in-pkg' : ''}" onclick="${oos ? '' : `toggleEq('${e.id}')`}">
         <input type="checkbox" class="eq-cb" ${qty > 0 ? 'checked' : ''} ${oos ? 'disabled' : ''} tabindex="-1">
-        <div>
-          <div class="eq-name">${e.name}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="eq-name">${e.name}${inPkg ? ' <span class="pkg-incl-badge">套餐已含</span>' : ''}</div>
           <div class="eq-meta">${e.code ? e.code + '　' : ''}庫存 ${e.stock} 件${e.notes ? '　' + e.notes : ''}</div>
         </div>
         <div class="eq-rate-col">
@@ -1157,6 +1137,21 @@ function renderEqList() {
   if (!html) html = `<div style="text-align:center;padding:48px 0;color:var(--gray-3);">找不到符合的器材</div>`;
   el.innerHTML = html;
 }
+  const cats = getCategories();
+  const el = document.getElementById('cat-chips');
+  if (!el) return;
+  el.innerHTML = `<div class="chip on" onclick="setCat('all')">全部</div>` +
+    cats.map(c => `<div class="chip" onclick="setCat('${c}')">${c}</div>`).join('');
+}
+
+function setCat(c) {
+  catFilter = c;
+  document.querySelectorAll('.chip').forEach(el => {
+    el.className = 'chip' + ((c === 'all' && el.textContent === '全部') || el.textContent === c ? ' on' : '');
+  });
+  renderEqList();
+}
+
 
 function toggleEq(id) {
   const eq = EQ.find(e => e.id === id);
