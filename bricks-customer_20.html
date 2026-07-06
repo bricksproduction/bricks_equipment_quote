@@ -408,9 +408,6 @@ body {
   border-radius: 10px;
 }
 
-.pkg-incl-badge{display:inline-block;font-size:10px;font-weight:700;color:#246B3B;background:#EBF4EF;border:1px solid #b3d9c0;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;white-space:nowrap;}
-.eq-row.in-pkg{border-left:3px solid #246B3B;background:linear-gradient(to right,#f4fbf6 0%,transparent 80%);}
-
 /* PACKAGES */
 .pkg-section-title{font-size:13px;font-weight:800;color:var(--gray-3);text-transform:uppercase;letter-spacing:.06em;margin:20px 0 10px;}
 .pkg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:24px;}
@@ -665,6 +662,24 @@ body {
   .hdr-brand-cn { font-size: 13px; }
   .hdr-brand-en { display: none; }
 }
+/* PACKAGES */
+.pkg-incl-badge{display:inline-block;font-size:10px;font-weight:700;color:#246B3B;background:#EBF4EF;border:1px solid #b3d9c0;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;white-space:nowrap;}
+.eq-row.in-pkg{border-left:3px solid #3a9960;background:linear-gradient(to right,#f4fbf6 0%,transparent 80%);}
+
+/* CATALOG */
+#v-catalog{display:none;}
+.hdr-catalog-btn{font-size:12px;font-weight:700;color:var(--gray-2);cursor:pointer;padding:6px 14px;border:1.5px solid var(--border);border-radius:16px;background:white;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.hdr-catalog-btn:hover{border-color:var(--red);color:var(--red);}
+.catalog-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.catalog-back{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--gray-2);cursor:pointer;padding:7px 14px;border:1.5px solid var(--border);border-radius:20px;background:white;transition:all .15s;}
+.catalog-back:hover{border-color:var(--red);color:var(--red);}
+.catalog-cat-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-3);padding:14px 0 6px;border-bottom:2px solid var(--dark);}
+.catalog-eq-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);}
+.catalog-eq-row:last-child{border-bottom:none;}
+.catalog-eq-name{font-size:13px;font-weight:700;}
+.catalog-eq-meta{font-size:11px;color:var(--gray-3);margin-top:2px;}
+.catalog-eq-rate{font-size:13px;font-weight:800;color:var(--red);white-space:nowrap;text-align:right;}
+.catalog-eq-unit{font-size:10px;font-weight:400;color:var(--gray-3);}
 </style>
 </head>
 <body>
@@ -680,6 +695,8 @@ body {
   </div>
   <div class="hdr-divider"></div>
   <span class="hdr-subtitle">器材租借申請</span>
+  <div style="flex:1;"></div>
+  <button class="hdr-catalog-btn" onclick="openCatalog()">📋 瀏覽器材</button>
 </header>
 
 <!-- PROGRESS BAR -->
@@ -688,6 +705,31 @@ body {
 <div id="toast-wrap"></div>
 
 <div class="wrap">
+
+  <!-- CATALOG VIEW -->
+  <div id="v-catalog">
+    <div class="catalog-header">
+      <div>
+        <div style="font-size:18px;font-weight:900;">器材目錄</div>
+        <div style="font-size:12px;color:var(--gray-3);margin-top:2px;">瀏覽所有可租借器材與日租金</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="catalog-back" onclick="closeCatalog()">← 返回</button>
+        <button class="btn-red" onclick="closeCatalog()">立即租借 →</button>
+      </div>
+    </div>
+    <div class="search-wrap" style="margin-bottom:10px;">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="cat-srch" placeholder="搜尋器材…" oninput="renderCatalog()">
+    </div>
+    <div class="chips" id="cat-filter-chips" style="margin-bottom:14px;"></div>
+    <div class="card" style="padding:0 16px;">
+      <div id="catalog-list"></div>
+    </div>
+    <div style="text-align:center;margin-top:20px;padding-bottom:32px;">
+      <button class="btn-red" onclick="closeCatalog()" style="font-size:14px;padding:12px 32px;">立即填寫租借申請 →</button>
+    </div>
+  </div>
 
   <!-- STEP NAV -->
   <div class="step-nav">
@@ -850,9 +892,31 @@ body {
       </div>
       <div style="font-size:11px;color:var(--gray-3);margin-top:6px;">實際金額以確認單為準。</div>
 
+      <!-- 租借合約條款 -->
+      <hr class="divider">
+      <div style="font-size:13px;font-weight:800;color:var(--dark);margin-bottom:10px;">📋 租借合約條款</div>
+      <div id="contract-terms" style="background:var(--gray-6);border:1px solid var(--gray-5);border-radius:var(--r);padding:14px 16px;max-height:220px;overflow-y:auto;margin-bottom:14px;">
+        <ol style="padding-left:20px;margin:0;font-size:12px;color:var(--gray-2);line-height:1.9;">
+          <li>乙方於取件時已確認所有器材、配件、功能及外觀均完整正常，簽名後視為確認無誤。</li>
+          <li>租賃期間內，乙方應善盡保管責任，不得轉租、轉借、抵押或交由第三人使用。</li>
+          <li>器材如有遺失、遭竊、人為損壞、泡水、摔落或其他非正常耗損情形，乙方應負擔全部維修或賠償費用；如無法修復，應依器材市價賠償。</li>
+          <li>因器材送修、維修或無法出租所造成之營業損失，甲方得向乙方請求合理賠償。</li>
+          <li>未經甲方同意，乙方不得自行拆卸、維修、改裝或更新任何器材。</li>
+          <li>器材應依約定時間歸還；逾期歸還者，甲方得依當日租金標準加收逾期租金。</li>
+          <li>歸還時如有缺少任何配件（含電池、充電器、線材、鏡頭蓋、記憶卡盒等），乙方應依甲方公告價格賠償。</li>
+          <li>拍攝資料、記憶卡、硬碟等檔案應由乙方自行備份，甲方不負資料遺失或損毀之責任。</li>
+          <li>如因乙方違反法令或不當使用器材所衍生之一切法律責任，概由乙方自行負責，與甲方無涉。</li>
+          <li>本租借單經雙方簽署後即成立契約，雙方均應遵守本單所載內容；未盡事宜，依中華民國相關法令辦理。</li>
+        </ol>
+      </div>
+      <label id="contract-check-label" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 14px;border:2px solid var(--border);border-radius:var(--r);background:white;transition:border-color .15s;">
+        <input type="checkbox" id="contract-agreed" style="width:18px;height:18px;margin-top:1px;flex-shrink:0;accent-color:var(--red);" onchange="onContractCheck()">
+        <span style="font-size:13px;font-weight:600;color:var(--dark);line-height:1.5;">我已閱讀並同意上述租借合約條款，本申請送出後即代表本人同意受本合約約束。</span>
+      </label>
+
       <div class="flex-end mt24">
         <button class="btn btn-outline" onclick="goStep2()">← 修改器材</button>
-        <button class="btn btn-red btn-lg" id="submit-btn" onclick="submitOrder()">送出申請</button>
+        <button class="btn btn-red btn-lg" id="submit-btn" onclick="submitOrder()" disabled style="opacity:.45;cursor:not-allowed;">送出申請</button>
       </div>
     </div>
   </div>
@@ -912,6 +976,64 @@ async function sGet(k) {
 async function sSet(k, v) {
   if(window.fsSet) await window.fsSet(k, v);
   localStorage.setItem(k, v);
+}
+
+// ── CATALOG ──
+let catCatFilter = 'all';
+
+function openCatalog() {
+  catCatFilter = 'all';
+  document.getElementById('v-catalog').style.display = 'block';
+  if (document.getElementById('cat-srch')) document.getElementById('cat-srch').value = '';
+  ['v1','v2','v3','v-success'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  const nav = document.querySelector('.step-nav'); if (nav) nav.style.display = 'none';
+  const prog = document.getElementById('progress-fill'); if (prog) prog.style.width = '0';
+  renderCatalogChips();
+  renderCatalog();
+}
+
+function closeCatalog() {
+  document.getElementById('v-catalog').style.display = 'none';
+  const nav = document.querySelector('.step-nav'); if (nav) nav.style.display = '';
+  setStep(1);
+}
+
+function renderCatalogChips() {
+  const cats = getCategories();
+  const el = document.getElementById('cat-filter-chips'); if (!el) return;
+  el.innerHTML = `<div class="chip ${catCatFilter==='all'?'on':''}" onclick="catCatFilter='all';renderCatalog();renderCatalogChips()">全部</div>` +
+    cats.map(c => `<div class="chip ${catCatFilter===c?'on':''}" onclick="catCatFilter='${c}';renderCatalog();renderCatalogChips()">${c}</div>`).join('');
+}
+
+function renderCatalog() {
+  const q = (document.getElementById('cat-srch')?.value || '').toLowerCase();
+  const cats = getCategories();
+  const filtered = EQ.filter(e => {
+    const mc = catCatFilter === 'all' || e.category === catCatFilter;
+    const ms = !q || e.name.toLowerCase().includes(q) || (e.code||'').toLowerCase().includes(q);
+    return mc && ms;
+  });
+  const grouped = {};
+  cats.forEach(c => { grouped[c] = []; });
+  filtered.forEach(e => { if (grouped[e.category]) grouped[e.category].push(e); });
+  Object.values(grouped).forEach(arr => arr.sort((a,b) => codeNum(a.code) - codeNum(b.code)));
+  const el = document.getElementById('catalog-list'); if (!el) return;
+  let html = '';
+  for (const [cat, items] of Object.entries(grouped)) {
+    if (!items.length) continue;
+    html += `<div class="catalog-cat-title">${cat}<span style="font-size:10px;color:var(--gray-3);font-weight:400;margin-left:8px;">${items.length}件</span></div>`;
+    html += items.map(e => `<div class="catalog-eq-row">
+      <div>
+        <div class="catalog-eq-name">${e.name}</div>
+        <div class="catalog-eq-meta">${e.code ? e.code+'　' : ''}庫存 ${e.stock} 件${e.notes ? '　'+e.notes : ''}</div>
+      </div>
+      <div class="catalog-eq-rate">NT$${e.rate.toLocaleString()}<span class="catalog-eq-unit">/天</span></div>
+    </div>`).join('');
+  }
+  if (!html) html = `<div style="padding:32px;text-align:center;color:var(--gray-3);">找不到符合的器材</div>`;
+  el.innerHTML = html;
 }
 
 // ── INIT ──
@@ -1028,9 +1150,24 @@ function goStep2() {
 
 function goStep1() { setStep(1); }
 
+function onContractCheck() {
+  const checked = document.getElementById('contract-agreed')?.checked;
+  const btn = document.getElementById('submit-btn');
+  if (!btn) return;
+  btn.disabled = !checked;
+  btn.style.opacity = checked ? '1' : '.45';
+  btn.style.cursor = checked ? 'pointer' : 'not-allowed';
+}
+
+function resetContractCheck() {
+  const cb = document.getElementById('contract-agreed');
+  if (cb) cb.checked = false;
+  onContractCheck();
+}
+
 function goStep3() {
   if (!selectedPkg && !Object.keys(selQty).length) { toast('請至少選擇一個套餐或器材', 'err'); return; }
-  buildConfirm(); setStep(3);
+  buildConfirm(); resetContractCheck(); setStep(3);
 }
 
 // ── PACKAGES ──
@@ -1077,7 +1214,7 @@ function selectPkg(id) {
 
 // ── EQ LIST ──
 function getCategories() {
-  // Preserve the order categories first appear in EQ array
+  // preserve order of first appearance in EQ array
   return [...new Set(EQ.map(e => e.category))];
 }
 
@@ -1085,6 +1222,22 @@ function codeNum(code) {
   if (!code) return 9999;
   const m = code.match(/(\d+)$/);
   return m ? parseInt(m[1]) : 9999;
+}
+
+function renderCatChips() {
+  const cats = getCategories();
+  const el = document.getElementById('cat-chips');
+  if (!el) return;
+  el.innerHTML = `<div class="chip on" onclick="setCat('all')">全部</div>` +
+    cats.map(c => `<div class="chip" onclick="setCat('${c}')">${c}</div>`).join('');
+}
+
+function setCat(c) {
+  catFilter = c;
+  document.querySelectorAll('.chip').forEach(el => {
+    el.className = 'chip' + ((c === 'all' && el.textContent === '全部') || el.textContent === c ? ' on' : '');
+  });
+  renderEqList();
 }
 
 function renderEqList() {
@@ -1098,9 +1251,10 @@ function renderEqList() {
   const grouped = {};
   cats.forEach(c => { grouped[c] = []; });
   filtered.forEach(e => { if (grouped[e.category]) grouped[e.category].push(e); });
-  Object.values(grouped).forEach(arr => arr.sort((a, b) => codeNum(a.code) - codeNum(b.code)));
+  // sort each group by code number
+  Object.values(grouped).forEach(arr => arr.sort((a,b) => codeNum(a.code) - codeNum(b.code)));
 
-  // Build set of equipment IDs included in selected package
+  // pkg-included set
   const pkgIds = selectedPkg ? new Set((selectedPkg.items||[]).map(i => i.equipmentId)) : new Set();
 
   const el = document.getElementById('eq-list');
@@ -1137,21 +1291,6 @@ function renderEqList() {
   if (!html) html = `<div style="text-align:center;padding:48px 0;color:var(--gray-3);">找不到符合的器材</div>`;
   el.innerHTML = html;
 }
-  const cats = getCategories();
-  const el = document.getElementById('cat-chips');
-  if (!el) return;
-  el.innerHTML = `<div class="chip on" onclick="setCat('all')">全部</div>` +
-    cats.map(c => `<div class="chip" onclick="setCat('${c}')">${c}</div>`).join('');
-}
-
-function setCat(c) {
-  catFilter = c;
-  document.querySelectorAll('.chip').forEach(el => {
-    el.className = 'chip' + ((c === 'all' && el.textContent === '全部') || el.textContent === c ? ' on' : '');
-  });
-  renderEqList();
-}
-
 
 function toggleEq(id) {
   const eq = EQ.find(e => e.id === id);
@@ -1416,6 +1555,7 @@ function defaultEQ() {
   ];
 }
 
+// ── STARTUP ──
 init();
 </script>
 </body>
